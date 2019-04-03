@@ -7,21 +7,23 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
     var itemArray = [ToDoItem]()
     
-    let defaults = UserDefaults()
-    
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+  //  let defaults = UserDefaults()
+  //  let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
-        //Load the persistent store of ToDoItems
-        
-        loadItems()
+         //Load the persistent store of ToDoItems
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+
+//        loadItems()
         
     }
 
@@ -58,45 +60,6 @@ class TodoListViewController: UITableViewController {
         tableView.reloadData()
         saveItems()
         
-        print(indexPath.row,tableView.cellForRow(at: indexPath)!.textLabel!.text!)
-
-        //THIS WORKS
-//        let test = tableView.cellForRow(at: indexPath)?.accessoryType
-//
-//        switch tableView.cellForRow(at: indexPath)?.accessoryType {
-//        case .none?:
-//
-//            itemArray[indexPath.row].taskCompleted = true
-//        default:
-//             itemArray[indexPath.row].taskCompleted = false
-//        }
-        
-//
-//        //THIS DOESN'T
-//        if tableView.cellForRow(at: indexPath)?.accessoryType == .none {
-//`
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-//
-//        } else {
-//
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-//
-//        }
-//
-//        //BUT I CAN'T USE the question mark after .none in the if statement.  THIS IS ILLEGAL:
-//
-//        if tableView.cellForRow(at: indexPath)?.accessoryType == .none? {
-//
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-//
-//        } else {
-//
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-//
-//        }
-        
-
-        
     }
     
     //MARK: Add New Items
@@ -110,17 +73,18 @@ class TodoListViewController: UITableViewController {
         alert.addTextField{(alertTextField) in
             alertTextField.placeholder = "Create new item"
             toDoDescription = alertTextField  //this is a class, so get a reference pointer
-            }
+        }
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             //what happens when button is clicked
-            let newItem = ToDoItem()
+            let newItem = ToDoItem(context: self.context)  // newItem is a pointer to a new object in the context
             newItem.itemDescription = toDoDescription.text ?? "New Item"
+            newItem.taskCompleted = false
             self.itemArray.append(newItem)
             self.saveItems()
             
-//            self.itemArray.append(toDoDescription.text ?? "New Item")
-//            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
+            //            self.itemArray.append(toDoDescription.text ?? "New Item")
+            //            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
             self.tableView.reloadData()
         }
         
@@ -134,42 +98,28 @@ class TodoListViewController: UITableViewController {
     
     func saveItems() {
         
-        let encoder = PropertyListEncoder()
-        
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
+            
         } catch {
-            print("Encoding Error for item array, \(error)")
+            print("Error saving context \(error)")
         }
-        
+        self.tableView.reloadData()
     }
     
-    func getItems() {
-        
-        let encoder = PropertyListEncoder()
-        
-        do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
-        } catch {
-            print("Encoding Error for item array, \(error)")
-        }
-        
-    }
     
-    func loadItems() {
-        
-        if let data = try? Data(contentsOf: dataFilePath!) {
-        let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([ToDoItem].self, from: data)
-            } catch {
-                print("Load Error")
-            }
-        }
-        
-    }
+//    func loadItems() {
+//
+//        if let data = try? Data(contentsOf: dataFilePath!) {
+//        let decoder = PropertyListDecoder()
+//            do {
+//                itemArray = try decoder.decode([ToDoItem].self, from: data)
+//            } catch {
+//                print("Load Error")
+//            }
+//        }
+//
+//    }
     
 }
 
